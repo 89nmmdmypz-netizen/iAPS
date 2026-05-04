@@ -45,7 +45,7 @@ jobs:
           fi
 
       - name: Select Xcode version
-        run: "sudo xcode-select --switch /Applications/Xcode_26.1.1.app/Contents/Developer"
+        run: "sudo xcode-select --switch /Applications/Xcode_15.0.app/Contents/Developer"
       
       - name: Checkout Repo for building
         uses: actions/checkout@v5
@@ -61,29 +61,20 @@ jobs:
 
       - name: Patch Match Tables
         run: find /usr/local/lib/ruby/gems -name table_printer.rb | xargs sed -i "" "/puts(Terminal::Table.new(params))/d"
-      
-      - name: Install project dependencies and update fastlane
+
+      - name: Install project dependencies
         run: |
-          bundle _${{ env.BUNDLER_VER }}_ update fastlane
           bundle _${{ env.BUNDLER_VER }}_ install
 
-      - name: Sync clock
-        run: sudo sntp -sS time.windows.com
+      - name: Build iAPS WITHOUT CERTS
+        run: |
+          cd ios
+          xcodebuild -project iAPS.xcodeproj -scheme iAPS -configuration Release -archivePath build/iAPS archive CODE_SIGNING_ALLOWED=NO
+          xcodebuild -exportArchive -archivePath build/iAPS.xcarchive -exportPath build -exportOptionsPlist exportOptions.plist CODE_SIGNING_ALLOWED=NO
 
-      - name: Fastlane Build & Archive
-        run: bundle _${{ env.BUNDLER_VER }}_ exec fastlane build_iAPS        
-        env:
-          TEAMID: ${{ secrets.TEAMID }}
-          GH_PAT: ${{ secrets.GH_PAT }}
-          FASTLANE_KEY_ID: ${{ secrets.FASTLANE_KEY_ID }}
-          FASTLANE_ISSUER_ID: ${{ secrets.FASTLANE_ISSUER_ID }}
-          FASTLANE_KEY: ${{ secrets.FASTLANE_KEY }}
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-
-      - name: Upload compiled IPA for you to download
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: iAPS-Installer-IPA
-          path: |
-            ${{ github.workspace }}/ios/build/Runner.ipa
+          path: ios/build/iAPS.ipa
           retention-days: 7
