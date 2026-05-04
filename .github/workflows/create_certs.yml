@@ -1,39 +1,68 @@
-name: 3. Create Certificates
-run-name: Create Certificates (${{ github.ref_name }})
-
-on: [workflow_call, workflow_dispatch]
-
-env:
-  TEAMID: ${{ secrets.TEAMID }}
-  GH_PAT: ${{ secrets.GH_PAT }}
-  GH_TOKEN: ${{ secrets.GH_PAT }}
-  MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-  FASTLANE_KEY_ID: ${{ secrets.FASTLANE_KEY_ID }}
-  FASTLANE_ISSUER_ID: ${{ secrets.FASTLANE_ISSUER_ID }}
-  FASTLANE_KEY: ${{ secrets.FASTLANE_KEY }}
+name: 4. Build iAPS
+run-name: Build iAPS (${{ github.ref_name }})
+on:
+  workflow_dispatch:
+  
+  push:
+  
+env:  
+  UPSTREAM_REPO: Artificial-Pancreas/iAPS
+  UPSTREAM_BRANCH: ${{ github.ref_name }}
+  TARGET_BRANCH: ${{ github.ref_name }}
+  ALIVE_BRANCH: alive
 
 jobs:
-  validate:
-    name: Validate
-    uses: ./.github/workflows/validate_secrets.yml
-    secrets: inherit
-
-  create_certs:
-    name: Certificates
-    needs: validate
-    runs-on: macos-latest
+  auto_build_check:
+    name: Check Auto Build Status
+    runs-on: ubuntu-latest
     outputs:
-      new_certificate_needed: ${{ steps.set_output.outputs.new_certificate_needed }}
+      AUTO_BUILD_ENABLED: ${{ steps.auto-build-enabled.outputs.auto_build }}
 
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v5
+      - name: Is Auto Build Branch
+        id: auto-build-enabled
+        run: |
+          echo "auto_build=true" >> $GITHUB_OUTPUT
 
+      - name: Show Auto Build Status
+        run: |
+          echo "Auto Build Status: ${{ steps.auto-build-enabled.outputs.auto_build }}"
+
+  # 原来的证书检查直接注释不用，不再运行
+  # check_certs: 
+  #   needs: auto_build_check
+  #   name: Check certificates
+  #   if: needs.auto_build_check.outputs.AUTO_BUILD_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
+  #   uses: ./.github/workflows/create_certs.yml
+  #   secrets: inherit
+
+  # Builds iAPS
+  build:
+    name: Build
+    # 不再依赖证书检查，只依赖前面检测
+    needs: [auto_build_check]
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
       - name: Set special variables
         run: |
           if [ ! -z ${{ vars.APP_IDENTIFIER }}  ]; then
             echo "APP_IDENTIFIER=${{ vars.APP_IDENTIFIER }}" >> $GITHUB_ENV
           fi
+          if [ ! -z ${{ vars.BUILD_GROUP }}  ]; then
+            echo "BUILD_GROUP=${{ vars.BUILD_GROUP }}" >> $GITHUB_ENV
+          fi
+
+      - name: Select Xcode version
+        run: "sudo xcode-select --switch /Applications/Xcode_26.1.1.app/Contents/Developer"
+      
+      - name: Checkout Repo for building
+        uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.GH_PAT }}
+          submodules: recursive
+          ref: ${{ env.TARGET_BRANCH }}
 
       - name: Install Bundler 2.x
         run: |
@@ -41,93 +70,39 @@ jobs:
           echo "BUNDLER_VER=2.7.2" >> $GITHUB_ENV
 
       - name: Patch Match Tables
-        run: |
-          TABLE_PRINTER_PATH=$(ruby -e 'puts Gem::Specification.find_by_name("fastlane").gem_dir')/match/lib/match/table_printer.rb
-          if [ -f "$TABLE_PRINTER_PATH" ]; then
-            sed -i "" "/puts(Terminal::Table.new(params))/d" "$TABLE_PRINTER_PATH"
-          else
-            echo "table_printer.rb not found"
-            exit 1
-          fi
-
-      - name: Install Project Dependencies
+        run: find /usr/local/lib/ruby/gems -name table_printer.rb | xargs sed -i "" "/puts(Terminal::Table.new(params))/d"
+      
+      - name: Install project dependencies
         run: bundle _${{ env.BUNDLER_VER }}_ install
 
-      # 👇 这里我已经改成【只生成主APP，不碰WatchKit】
-      - name: Check and create or update Distribution certificate and profiles if needed
-        run: |
-          echo "Running Fastlane certs lane..."
-          bundle _${{ env.BUNDLER_VER }}_ exec fastlane run cert \
-            development:false \
-            generate_apple_certs:true \
-            force:true
-        continue-on-error: true
+      - name: Sync clock
+        run: sudo sntp -sS time.windows.com
 
-      - name: Check Distribution certificate and launch Nuke certificates if needed
-        run: bundle _${{ env.BUNDLER_VER }}_ exec fastlane check_and_renew_certificates
-        id: check_certs
+      - name: Fastlane Build & Archive
+        run: bundle _${{ env.BUNDLER_VER }}_ exec fastlane build_iAPS        
+        env:
+          TEAMID: ${{ secrets.TEAMID }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+          FASTLANE_KEY_ID: ${{ secrets.FASTLANE_KEY_ID }}
+          FASTLANE_ISSUER_ID: ${{ secrets.FASTLANE_ISSUER_ID }}
+          FASTLANE_KEY: ${{ secrets.FASTLANE_KEY }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      
+      - name: Fastlane upload to TestFlight
+        run: bundle _${{ env.BUNDLER_VER }}_ exec fastlane release
+        env:
+          TEAMID: ${{ secrets.TEAMID }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+          FASTLANE_KEY_ID: ${{ secrets.FASTLANE_KEY_ID }}
+          FASTLANE_ISSUER_ID: ${{ secrets.FASTLANE_ISSUER_ID }}
+          FASTLANE_KEY: ${{ secrets.FASTLANE_KEY }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
 
-      - name: Set output and annotations based on Fastlane result
-        id: set_output
-        run: |
-          CERT_STATUS_FILE="${{ github.workspace }}/fastlane/new_certificate_needed.txt"
-          ENABLE_NUKE_CERTS=${{ vars.ENABLE_NUKE_CERTS }}
-          
-          if [ -f "$CERT_STATUS_FILE" ]; then
-            CERT_STATUS=$(cat "$CERT_STATUS_FILE" | tr -d '\n' | tr -d '\r')
-            echo "new_certificate_needed: $CERT_STATUS"
-            echo "new_certificate_needed=$CERT_STATUS" >> $GITHUB_OUTPUT
-          else
-            echo "Certificate status file not found. Defaulting to false."
-            echo "new_certificate_needed=false" >> $GITHUB_OUTPUT
-          fi
-
-          if [ "$CERT_STATUS" != "true" ] && [ "$ENABLE_NUKE_CERTS" != "true" ]; then
-            echo "::notice::🔔 Automated renewal of certificates is disabled."
-          fi
-
-          if [ "$CERT_STATUS" = "true" ] && [ "$ENABLE_NUKE_CERTS" != "true" ]; then
-            echo "::error::❌ No valid distribution certificate found."
-            exit 1
-          fi
-
-  nuke_certs:
-      name: Nuke certificates
-      needs: [validate, create_certs]
-      runs-on: macos-latest
-      if: ${{ (needs.create_certs.outputs.new_certificate_needed == 'true' && vars.ENABLE_NUKE_CERTS == 'true') || vars.FORCE_NUKE_CERTS == 'true' }}
-      steps:
-        - name: Checkout repository
-          uses: actions/checkout@v5
-
-        - name: Set special variables
-          run: |
-            if [ ! -z ${{ vars.APP_IDENTIFIER }}  ]; then
-              echo "APP_IDENTIFIER=${{ vars.APP_IDENTIFIER }}" >> $GITHUB_ENV
-            fi
-
-        - name: Install Bundler 2.x
-          run: |
-            gem install bundler -v 2.7.2
-            echo "BUNDLER_VER=2.7.2" >> $GITHUB_ENV
-
-        - name: Install dependencies
-          run: bundle _${{ env.BUNDLER_VER }}_ install
-
-        - name: Run Fastlane nuke_certs
-          run: |
-            set -e
-            bundle _${{ env.BUNDLER_VER }}_ exec fastlane nuke_certs
-
-        # 👇 重点：只生成主APP证书，彻底跳过WatchKit，一劳永逸
-        - name: Recreate Distribution certificate after nuking
-          run: |
-            set -e
-            bundle _${{ env.BUNDLER_VER }}_ exec fastlane match appstore \
-              app_identifier "${{ vars.APP_IDENTIFIER }}" \
-              force:true
-
-        - name: Add success annotations
-          if: ${{ success() }}
-          run: |
-            echo "::warning::✅ 证书已重新生成（仅主APP，无WatchKit）"
+      - name: Upload build log, IPA and Symbol artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-artifacts
+          path: |
+            artifacts
+            buildlog
