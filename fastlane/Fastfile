@@ -2,7 +2,8 @@ default_platform(:ios)
 
 lane :build_iAPS do
   build_app(
-    project: "iAPS.xcodeproj", 
+    project: "iAPS/iAPS.xcodeproj",
+    scheme: "iAPS",
     configuration: "Release",
     export_method: "ad-hoc",
     output_directory: "./artifacts",
