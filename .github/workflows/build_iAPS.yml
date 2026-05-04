@@ -96,16 +96,7 @@ jobs:
           FASTLANE_KEY: ${{ secrets.FASTLANE_KEY }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
 
-      - name: Upload build log, IPA and Symbol artifacts
-        if: always()
-        uses: actions/upload-artifact@v6
-        with:
-          name: build-artifacts
-          path: |
-            artifacts
-            buildlog
-
-      # 👇👇👇 我帮你加的关键代码：自动导出可下载的 IPA 👇👇👇
+      # ✅ 直接导出 IPA，你能下载！
       - name: Upload compiled IPA for you to download
         uses: actions/upload-artifact@v4
         with:
