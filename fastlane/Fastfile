@@ -1,11 +1,8 @@
 default_platform(:ios)
 
 lane :build_iAPS do
-  build_app(
-    scheme: "iAPS",
-    configuration: "Release",
-    export_method: "ad-hoc"
-  )
+  # 什么都不指定，全自动！
+  build_app
 end
 
 lane :release do
