@@ -1,7 +1,7 @@
 default_platform(:ios)
 
 lane :build_iAPS do
-  # 什么都不指定，全自动！
+
   build_app
 end
 
