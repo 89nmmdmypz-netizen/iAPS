@@ -70,12 +70,6 @@ jobs:
       - name: Sync clock
         run: sudo sntp -sS time.windows.com
 
-      - name: 查看项目真实目录结构（查文件在哪里）
-        run: |
-          pwd
-          ls -la
-          ls -la iAPS 2>/dev/null
-
       - name: Fastlane Build & Archive
         run: bundle _${{ env.BUNDLER_VER }}_ exec fastlane build_iAPS        
         env:
@@ -85,18 +79,7 @@ jobs:
           FASTLANE_ISSUER_ID: ${{ secrets.FASTLANE_ISSUER_ID }}
           FASTLANE_KEY: ${{ secrets.FASTLANE_KEY }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-      
-      - name: Fastlane upload to TestFlight
-        run: bundle _${{ env.BUNDLER_VER }}_ exec fastlane release
-        env:
-          TEAMID: ${{ secrets.TEAMID }}
-          GH_PAT: ${{ secrets.GH_PAT }}
-          FASTLANE_KEY_ID: ${{ secrets.FASTLANE_KEY_ID }}
-          FASTLANE_ISSUER_ID: ${{ secrets.FASTLANE_ISSUER_ID }}
-          FASTLANE_KEY: ${{ secrets.FASTLANE_KEY }}
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
 
-      # ✅ 直接导出 IPA，你能下载！
       - name: Upload compiled IPA for you to download
         uses: actions/upload-artifact@v4
         with:
