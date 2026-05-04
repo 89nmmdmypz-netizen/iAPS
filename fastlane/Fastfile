@@ -2,7 +2,7 @@ default_platform(:ios)
 
 lane :build_iAPS do
   build_app(
-    workspace: "Runner.xcworkspace",
+    workspace: "ios/Runner.xcworkspace",
     scheme: "Runner",
     configuration: "Release"
   )
