@@ -1,60 +1,25 @@
-fastlane_version "2.218.0"
-
 default_platform(:ios)
 
-def get_app_id
-  return ENV["APP_IDENTIFIER"] unless ENV["APP_IDENTIFIER"].nil?
-  return "ru.artpancreas.***.FreeAPS"
-end
-
-def get_team_id
-  return ENV["TEAMID"] unless ENV["TEAMID"].nil?
-end
-
 platform :ios do
-  desc "Fetch certificates and profiles (ONLY MAIN APP)"
-  lane :certs do
-    match(
-      type: "appstore",
-      readonly: false,
-      app_identifier: get_app_id,
-      team_id: get_team_id,
-      force: true
-    )
-  end
-
-  desc "Nuke certificates and profiles"
-  lane :nuke_certs do
-    match(
-      type: "appstore",
-      readonly: false,
-      app_identifier: get_app_id,
-      team_id: get_team_id,
-      force: true,
-      nuke: true
-    )
-  end
-
-  desc "Check certificate status"
-  lane :check_and_renew_certificates do
-    cert_status_file = "#{__dir__}/new_certificate_needed.txt"
-    File.write(cert_status_file, "false")
-  end
-
-  desc "Build and sign iAPS IPA"
+  desc "Build and archive iAPS"
   lane :build_iAPS do
-    certs
+    # 直接跳过所有证书匹配，只编译主APP
     build_app(
+      workspace: "iAPS.xcworkspace",
       scheme: "iAPS",
+      configuration: "Release",
       export_method: "app-store",
       output_directory: "./artifacts",
-      output_name: "iAPS.ipa"
+      output_name: "iAPS.ipa",
+      skip_profile_detection: true,
+      automatic_code_signing: true
     )
   end
 
   desc "Upload to TestFlight"
   lane :release do
     upload_to_testflight(
+      ipa: "./artifacts/iAPS.ipa",
       skip_waiting_for_build_processing: true
     )
   end
