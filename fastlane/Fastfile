@@ -1,26 +1,14 @@
 default_platform(:ios)
 
-platform :ios do
-  desc "Build and archive iAPS without match"
-  lane :build_iAPS do
-    # 不执行 match，直接编译主APP
-    build_app(
-      workspace: "iAPS/iAPS.xcworkspace",
-      scheme: "iAPS",
-      configuration: "Release",
-      export_method: "app-store",
-      output_directory: "./artifacts",
-      output_name: "iAPS.ipa",
-      skip_profile_detection: true,   # 跳过配置文件检测
-      automatic_code_signing: true    # 让Xcode自动处理签名
-    )
-  end
-
-  desc "Upload to TestFlight (optional)"
-  lane :release do
-    upload_to_testflight(
-      ipa: "./artifacts/iAPS.ipa",
-      skip_waiting_for_build_processing: true
-    )
-  end
+lane :build_iAPS do
+  build_app(
+    workspace: "../iAPS.xcworkspace",
+    scheme: "iAPS",
+    configuration: "Release",
+    export_method: "ad-hoc",
+    output_directory: "./artifacts",
+    output_name: "iAPS.ipa",
+    skip_profile_detection: true,
+    automatic_code_signing: true
+  )
 end
