@@ -5,7 +5,7 @@ platform :ios do
   lane :build_iAPS do
     # 不执行 match，直接编译主APP
     build_app(
-      workspace: "iAPS.xcworkspace",
+      workspace: "iAPS/iAPS.xcworkspace",
       scheme: "iAPS",
       configuration: "Release",
       export_method: "app-store",
