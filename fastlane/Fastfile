@@ -1,5 +1,5 @@
-default_platform(:ios)default_platform(:ios)
+default_platform(:ios)
 
 lane :build_iAPS do
-  # 空流程，不执行构建，只让目录检测跑出来
+  # 空的，不执行任何构建
 end
