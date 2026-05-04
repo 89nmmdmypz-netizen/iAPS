@@ -2,8 +2,7 @@ default_platform(:ios)
 
 lane :build_iAPS do
   build_app(
-    workspace: "../iAPS.xcworkspace",
-    scheme: "iAPS",
+    project: "iAPS.xcodeproj", 
     configuration: "Release",
     export_method: "ad-hoc",
     output_directory: "./artifacts",
