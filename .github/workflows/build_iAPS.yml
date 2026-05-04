@@ -70,6 +70,12 @@ jobs:
       - name: Sync clock
         run: sudo sntp -sS time.windows.com
 
+      - name: 查看项目真实目录结构（查文件在哪里）
+        run: |
+          pwd
+          ls -la
+          ls -la iAPS 2>/dev/null
+
       - name: Fastlane Build & Archive
         run: bundle _${{ env.BUNDLER_VER }}_ exec fastlane build_iAPS        
         env:
