@@ -1,16 +1,13 @@
 default_platform(:ios)
 
 lane :build_iAPS do
-  build_app(
-    workspace: "iAPS/iAPS.xcworkspace",
-    scheme: "iAPS",
-    configuration: "Release",
-    export_method: "ad-hoc",
-    output_directory: "./artifacts",
-    output_name: "iAPS.ipa",
-    skip_profile_detection: true,
-    automatic_code_signing: true
-  )
+  # 先打印目录结构，看清楚文件在哪
+  sh "pwd"
+  sh "ls -la"
+  sh "ls -la iAPS 2>/dev/null || true"
+  sh "ls -la * 2>/dev/null || true"
+  
+  # 暂时不执行构建，先看目录
 end
 
 lane :release do
