@@ -1,5 +1,18 @@
 default_platform(:ios)
 
 lane :build_iAPS do
-  # 空的，不执行任何构建
+  build_app(
+    project: "./iAPS.xcodeproj",
+    scheme: "iAPS",
+    configuration: "Release",
+    export_method: "ad-hoc",
+    output_directory: "./artifacts",
+    output_name: "iAPS.ipa",
+    skip_profile_detection: true,
+    automatic_code_signing: true
+  )
+end
+
+lane :release do
+  # 空的，避免报错
 end
