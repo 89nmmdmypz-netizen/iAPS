@@ -1,15 +1,13 @@
 default_platform(:ios)
 
 lane :build_iAPS do
-  # 先打印目录结构，看清楚文件在哪
-  sh "pwd"
-  sh "ls -la"
-  sh "ls -la iAPS 2>/dev/null || true"
-  sh "ls -la * 2>/dev/null || true"
-  
-  # 暂时不执行构建，先看目录
+  build_app(
+    workspace: "iAPS.xcworkspace",
+    scheme: "iAPS",
+    configuration: "Release",
+    export_method: "ad-hoc"
+  )
 end
 
 lane :release do
-  # 空的，避免报错
 end
