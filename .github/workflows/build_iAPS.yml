@@ -104,3 +104,12 @@ jobs:
           path: |
             artifacts
             buildlog
+
+      # 👇👇👇 我帮你加的关键代码：自动导出可下载的 IPA 👇👇👇
+      - name: Upload compiled IPA for you to download
+        uses: actions/upload-artifact@v4
+        with:
+          name: iAPS-Installer-IPA
+          path: |
+            ${{ github.workspace }}/ios/build/Runner.ipa
+          retention-days: 7
