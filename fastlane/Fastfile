@@ -1,14 +1,5 @@
-default_platform(:ios)
+default_platform(:ios)default_platform(:ios)
 
 lane :build_iAPS do
-  build_app(
-    project: "iAPS/iAPS.xcodeproj",
-    scheme: "iAPS",
-    configuration: "Release",
-    export_method: "ad-hoc",
-    output_directory: "./artifacts",
-    output_name: "iAPS.ipa",
-    skip_profile_detection: true,
-    automatic_code_signing: true
-  )
+  # 空流程，不执行构建，只让目录检测跑出来
 end
