@@ -8,9 +8,6 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   FASTLANE_OPT_OUT_USAGE: true
-  BUNDLE_PATH: vendor/bundle
-  GEM_HOME: vendor/bundle
-  PATH: ${{ github.workspace }}/vendor/bundle/ruby/3.3.0/bin:/usr/local/bin:/usr/bin:/bin
 
 jobs:
   build:
@@ -30,52 +27,20 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.3.0
+          ruby-version: '3.3'
           bundler-cache: true
 
-      - name: Install Fastlane dependencies
-        run: |
-          bundle config path $BUNDLE_PATH
-          bundle install --jobs 4 --retry 3
-          echo "✅ Bundle install completed"
-          bundle show fastlane
-          which bundle
-          which ruby
-
-      - name: Debug environment info
-        run: |
-          echo "=== 工作目录 ==="
-          pwd
-          ls -la
-          echo "=== Ruby/Bundle版本 ==="
-          ruby -v
-          bundle -v
-          echo "=== Fastlane路径检查 ==="
-          bundle exec which fastlane || echo "❌ bundle exec fastlane not found"
-          ls -la $BUNDLE_PATH/ruby/3.3.0/bin/
+      - name: Install dependencies
+        run: bundle install
 
       - name: Write Fastlane AuthKey
-        run: |
-          echo "${{ secrets.FASTLANE_KEY }}" > fastlane/AuthKey.p8
-          cat fastlane/AuthKey.p8
+        run: echo "${{ secrets.FASTLANE_KEY }}" > fastlane/AuthKey.p8
 
-      - name: Run Fastlane build_iAPS
+      - name: Build and Distribute
         env:
           TEAMID: ${{ secrets.TEAMID }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
           FASTLANE_KEY_ID: ${{ secrets.FASTLANE_KEY_ID }}
           FASTLANE_ISSUER_ID: ${{ secrets.FASTLANE_ISSUER_ID }}
-          FASTLANE_KEY: ${{ secrets.FASTLANE_KEY }}
           GH_PAT: ${{ secrets.GH_PAT }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-        run: bundle exec fastlane build_iAPS --verbose
-
-      - name: Upload IPA artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: iAPS-${{ github.sha }}
-          path: |
-            *.ipa
-            fastlane/build/*.ipa
-          retention-days: 7
+        run: bundle exec fastlane build_iAPS
