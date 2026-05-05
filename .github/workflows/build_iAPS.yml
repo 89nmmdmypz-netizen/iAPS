@@ -134,6 +134,8 @@ jobs:
         run: |
           gem install bundler -v 2.7.2
           echo "BUNDLER_VER=2.7.2" >> $GITHUB_ENV
+          echo "/usr/local/lib/ruby/gems/3.3.0/bin" >> $GITHUB_PATH
+          echo "$HOME/.gem/ruby/3.3.0/bin" >> $GITHUB_PATH
 
       # Patch Fastlane Match to not print tables
       - name: Patch Match Tables
