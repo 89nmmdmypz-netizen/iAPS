@@ -1,77 +1,41 @@
-namename: 4. Build iAPS4. Build iAPS
-run-name: Build iAPS ($Build iAPS ($Build iAPS ($Build iAPS (${{ github.ref_name  github.ref_name  github.ref_name  github.ref_name }}))))
-
+name: Build iAPS
 on:
   workflow_dispatch:
   push:
-
-env:
-  UPSTREAM_REPO: Artificial-Pancreas/iAPSArtificial-Pancreas/iAPSArtificial-Pancreas/iAPSArtificial-Pancreas/iAPS
-  UPSTREAM_BRANCH: $$$$$$$$$$$$$$$${{ github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name }}
-  TARGET_BRANCH: $$$$$$$$$$$$$$$${{ github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name }}
-  ALIVE_BRANCH: alivealivealivealive
+    branches:
+      - 'main*'
 
 jobs:
-  auto_build_check:
-    name: Check Auto Build StatusCheck Auto Build StatusCheck Auto Build StatusCheck Auto Build Status
-    runs-on: ubuntu-latestubuntu-latestubuntu-latestubuntu-latest
-    outputs:
-      AUTO_BUILD_ENABLED: $$$$$$$$$$$$$$$${{ steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build }}
-
-    steps:
-      - name: Is Auto Build BranchIs Auto Build BranchIs Auto Build BranchIs Auto Build BranchIs Auto Build BranchIs Auto Build BranchIs Auto Build BranchIs Auto Build Branch
-        id: auto-build-enabledauto-build-enabledauto-build-enabledauto-build-enabled
-        run: |
-          echo "auto_build=true" >> $GITHUB_OUTPUT
-
-      - name: Show Auto Build StatusShow Auto Build StatusShow Auto Build StatusShow Auto Build StatusShow Auto Build StatusShow Auto Build StatusShow Auto Build StatusShow Auto Build Status
-        run: |
-          echo "Auto Build Status: ${{ steps.auto-build-enabled.outputs.auto_build }}"
-
   build:
-    name: BuildBuildBuildBuild
-    needs: [auto_build_checkauto_build_checkauto_build_checkauto_build_checkauto_build_checkauto_build_checkauto_build_checkauto_build_check]
-    runs-on: macos-latestmacos-latestmacos-latestmacos-latest
-    permissions:
-      contents: writewritewritewrite
+    runs-on: macos-14
     steps:
-      - name: Set special variables
-        run: |
-          if [ ! -z ${{ vars.APP_IDENTIFIER }}  ]; then
-            echo "APP_IDENTIFIER=${{ vars.APP_IDENTIFIER }}" >> $GITHUB_ENV
-          fi
-          if [ ! -z ${{ vars.BUILD_GROUP }}  ]; then
-            echo "BUILD_GROUP=${{ vars.BUILD_GROUP }}" >> $GITHUB_ENV
-          fi
-      
-      - name: Checkout Repo for building
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GH_PAT }}
-          submodules: recursive
-          ref: ${{ env.TARGET_BRANCH }}
+          fetch-depth: 0
 
-      - name: Install Bundler 2.x
-        run: |
-          gem install bundler -v 2.7.2
-          echo "BUNDLER_VER=2.7.2" >> $GITHUB_ENV
-
-      - name: Patch Match Tables
-        run: find /usr/local/lib/ruby/gems -name table_printer.rb | xargs sed -i "" "/puts(Terminal::Table.new(params))/d"
-
-      - name: Install project dependencies
-        run: |
-          bundle _${{ env.BUNDLER_VER }}_ install
-
-      - name: Build iAPS WITHOUT CERTS
-        run: |
-          cd ios
-          xcodebuild -project iAPS.xcodeproj -scheme iAPS -configuration Release -archivePath build/iAPS archive CODE_SIGNING_ALLOWED=NO
-          xcodebuild -exportArchive -archivePath build/iAPS.xcarchive -exportPath build -exportOptionsPlist exportOptions.plist CODE_SIGNING_ALLOWED=NO
-
-      - name: Upload IPA
-        uses: actions/upload-artifact@v4
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
         with:
-          name: iAPS-Installer-IPA
-          path: ios/build/iAPS.ipa
-          retention-days: 7
+          xcode-version: latest-stable
+
+      - name: Install Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.3.0
+          bundler-cache: true
+
+      - name: Install Dependencies
+        run: bundle install
+
+      - name: Decode Fastlane API Key
+        run: echo -e "${{ secrets.FASTLANE_KEY }}" > fastlane/AuthKey.p8
+
+      - name: Build and Distribute
+        env:
+          TEAMID: ${{ secrets.TEAMID }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          FASTLANE_KEY_ID: ${{ secrets.FASTLANE_KEY_ID }}
+          FASTLANE_ISSUER_ID: ${{ secrets.FASTLANE_ISSUER_ID }}
+          FASTLANE_KEY: ${{ secrets.FASTLANE_KEY }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: bundle exec fastlane build_iAPS
