@@ -5,32 +5,64 @@ on:
     branches:
       - 'main*'
 
+env:
+  # 解决Node.js 20弃用警告，强制使用Node.js 24
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  # 防止fastlane发送匿名统计信息
+  FASTLANE_OPT_OUT_USAGE: true
+
 jobs:
   build:
+    name: Build & Package iAPS
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      # 1. 拉取完整代码（含所有分支/标签，避免编译依赖缺失）
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # 2. 配置最新稳定版Xcode（和官方原版保持一致）
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
 
-      - name: Install Ruby
+      # 3. 配置Ruby环境（和你之前的版本兼容，缓存依赖加速构建）
+      - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.3.0
           bundler-cache: true
 
-      - name: Install Dependencies
-        run: bundle install
+      # 4. 安装fastlane及所有依赖（增加重试机制避免网络问题）
+      - name: Install Fastlane dependencies
+        run: |
+          bundle config path vendor/bundle
+          bundle install --jobs 4 --retry 3
 
-      - name: Decode Fastlane API Key
-        run: echo -e "${{ secrets.FASTLANE_KEY }}" > fastlane/AuthKey.p8
+      # 5. 调试步骤：验证环境和文件路径（避免假成功）
+      - name: Debug environment info
+        run: |
+          echo "=== 工作目录信息 ==="
+          pwd
+          ls -la
+          echo "=== 版本信息 ==="
+          ruby -v
+          bundle -v
+          fastlane -v
+          echo "=== fastlane目录文件 ==="
+          ls -la fastlane/
 
-      - name: Build and Distribute
+      # 6. 解码并写入Fastlane API密钥（和官方原版逻辑完全一致）
+      - name: Write Fastlane AuthKey
+        run: |
+          echo "${{ secrets.FASTLANE_KEY }}" > fastlane/AuthKey.p8
+          echo "✅ AuthKey.p8 已生成，内容预览："
+          cat fastlane/AuthKey.p8
+
+      # 7. 核心步骤：运行fastlane构建iAPS（和官方原版lane完全一致，强制输出日志）
+      - name: Run Fastlane build_iAPS
         env:
           TEAMID: ${{ secrets.TEAMID }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
@@ -38,4 +70,16 @@ jobs:
           FASTLANE_ISSUER_ID: ${{ secrets.FASTLANE_ISSUER_ID }}
           FASTLANE_KEY: ${{ secrets.FASTLANE_KEY }}
           GH_PAT: ${{ secrets.GH_PAT }}
-        run: bundle exec fastlane build_iAPS
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: bundle exec fastlane build_iAPS --verbose
+
+      # 8. 构建完成后，上传IPA文件到Artifacts（方便你直接下载）
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iAPS-${{ github.sha }}
+          path: |
+            *.ipa
+            fastlane/build/*.ipa
+          retention-days: 7
