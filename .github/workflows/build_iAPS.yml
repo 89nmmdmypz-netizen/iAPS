@@ -1,39 +1,39 @@
-name: 4. Build iAPS
-run-name: Build iAPS (${{ github.ref_name }})
+namename: 4. Build iAPS4. Build iAPS
+run-name: Build iAPS ($Build iAPS ($Build iAPS ($Build iAPS (${{ github.ref_name  github.ref_name  github.ref_name  github.ref_name }}))))
 
 on:
   workflow_dispatch:
   push:
 
 env:
-  UPSTREAM_REPO: Artificial-Pancreas/iAPS
-  UPSTREAM_BRANCH: ${{ github.ref_name }}
-  TARGET_BRANCH: ${{ github.ref_name }}
-  ALIVE_BRANCH: alive
+  UPSTREAM_REPO: Artificial-Pancreas/iAPSArtificial-Pancreas/iAPSArtificial-Pancreas/iAPSArtificial-Pancreas/iAPS
+  UPSTREAM_BRANCH: $$$$$$$$$$$$$$$${{ github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name }}
+  TARGET_BRANCH: $$$$$$$$$$$$$$$${{ github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name  github.ref_name }}
+  ALIVE_BRANCH: alivealivealivealive
 
 jobs:
   auto_build_check:
-    name: Check Auto Build Status
-    runs-on: ubuntu-latest
+    name: Check Auto Build StatusCheck Auto Build StatusCheck Auto Build StatusCheck Auto Build Status
+    runs-on: ubuntu-latestubuntu-latestubuntu-latestubuntu-latest
     outputs:
-      AUTO_BUILD_ENABLED: ${{ steps.auto-build-enabled.outputs.auto_build }}
+      AUTO_BUILD_ENABLED: $$$$$$$$$$$$$$$${{ steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build  steps.auto-build-enabled.outputs.auto_build }}
 
     steps:
-      - name: Is Auto Build Branch
-        id: auto-build-enabled
+      - name: Is Auto Build BranchIs Auto Build BranchIs Auto Build BranchIs Auto Build BranchIs Auto Build BranchIs Auto Build BranchIs Auto Build BranchIs Auto Build Branch
+        id: auto-build-enabledauto-build-enabledauto-build-enabledauto-build-enabled
         run: |
           echo "auto_build=true" >> $GITHUB_OUTPUT
 
-      - name: Show Auto Build Status
+      - name: Show Auto Build StatusShow Auto Build StatusShow Auto Build StatusShow Auto Build StatusShow Auto Build StatusShow Auto Build StatusShow Auto Build StatusShow Auto Build Status
         run: |
           echo "Auto Build Status: ${{ steps.auto-build-enabled.outputs.auto_build }}"
 
   build:
-    name: Build
-    needs: [auto_build_check]
-    runs-on: macos-latest
+    name: BuildBuildBuildBuild
+    needs: [auto_build_checkauto_build_checkauto_build_checkauto_build_checkauto_build_checkauto_build_checkauto_build_checkauto_build_check]
+    runs-on: macos-latestmacos-latestmacos-latestmacos-latest
     permissions:
-      contents: write
+      contents: writewritewritewrite
     steps:
       - name: Set special variables
         run: |
@@ -43,9 +43,6 @@ jobs:
           if [ ! -z ${{ vars.BUILD_GROUP }}  ]; then
             echo "BUILD_GROUP=${{ vars.BUILD_GROUP }}" >> $GITHUB_ENV
           fi
-
-      - name: Select Xcode version
-        run: "sudo xcode-select --switch /Applications/Xcode_26.2.app/Contents/Developer"
       
       - name: Checkout Repo for building
         uses: actions/checkout@v5
