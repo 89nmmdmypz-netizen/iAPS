@@ -1,21 +1,16 @@
-name: Build iAPS
+name: build_iAPS
+
 on:
   workflow_dispatch:
   push:
     branches:
       - 'main*'
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  FASTLANE_OPT_OUT_USAGE: true
-
 jobs:
   build:
-    name: Build & Package iAPS
     runs-on: macos-14
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -24,19 +19,18 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
+      - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.3'
           bundler-cache: true
 
-      - name: Install dependencies
+      - name: Install gems
         run: bundle install
 
-      - name: Write Fastlane AuthKey
-        run: echo "${{ secrets.FASTLANE_KEY }}" > fastlane/AuthKey.p8
+      - name: Create AuthKey file
+        run: echo -e "${{ secrets.FASTLANE_KEY }}" > fastlane/AuthKey.p8
 
-      - name: Build and Distribute
+      - name: Fastlane build_iAPS
         env:
           TEAMID: ${{ secrets.TEAMID }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
